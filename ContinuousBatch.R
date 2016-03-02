@@ -1,23 +1,34 @@
 #You can use code you wrote for the correlation exercise here.
 source("ContinuousFunctions")
-tree <- read.tree("____PATH_TO_TREE_OR_SOME_OTHER_WAY_OF_GETTING_A_TREE____")
-discrete.data <- read.csv(file="____PATH_TO_DATA_OR_SOME_OTHER_WAY_OF_GETTING_TRAITS____", stringsAsFactors=FALSE) #death to factors.
-continuous.data <- read.csv(file="____PATH_TO_DATA_OR_SOME_OTHER_WAY_OF_GETTING_TRAITS____", stringsAsFactors=FALSE) #death to factors.
+setwd("~/Desktop/UTK/Spring_2016/PhyloMeth/ContinuousTraits")
+
+tree <- read.tree("Eurycea_Tree")
+
+discrete.data <- round(runif(length(tree$tip.label)))
+names(discrete.data)<-tree$tip.label
+
+continuous.data <- rnorm(31,mean=25,sd=8)
+names(continuous.data)<-tree$tip.label
 
 cleaned.continuous <- CleanData(tree, continuous.data)
 cleaned.discrete <- CleanData(tree, discrete.data)
-VisualizeData(tree, cleaned.continuous)
-VisualizeData(tree, cleaned.discrete)
+
+VisualizeData(cleaned.continuous)
+VisualizeData(cleaned.discrete)
 
 #First, start basic. What is the rate of evolution of your trait on the tree? 
 
-BM1 <- fitContinuous(tree, cleaned.continuous, model="BM")
-print(paste("The rate of evolution is", _____, "in units of", _______))
+BM1 <- fitContinuous(cleaned.continuous$phy, cleaned.continuous$data, model="BM")
+print(paste("The rate of evolution is", BM1[[4]]$sigsq, "in units of", "mm per ___"))
 #Important: What are the rates of evolution? In what units?
-OU1 <- fitContinuous(tree, cleaned.continuous, model="OU")
-par(mfcol(c(1,2)))
+
+#ultra.tree <- chronos(cleaned.continuous$phy, lambda=0, model = "correlated")
+OU1 <- fitContinuous(tree, cleaned.continuous$data, model="OU")
+
+quartz()
+par(mfcol=c(1,2))
 plot(tree, show.tip.label=FALSE)
-ou.tree <- rescale(tree, model="OU", ___alpha____)
+ou.tree <- rescale(tree, model="OU", alpha=OU1[[4]]$alpha)
 plot(ou.tree)
 #How are the trees different?
 
@@ -38,7 +49,8 @@ delta.AIC.OU1 <- ________FIGURE_OUT_HOW_TO_DO_THIS_____
 
 #First, we need to assign regimes. The way we do this is with ancestral state estimation of a discrete trait.
 #We can do this using ace() in ape, or similar functions in corHMM or diversitree. Use only one discrete char
-one.discrete.char <- _____________
+one.discrete.char <- discrete.data
+names(one.discrete.char)<-tree$tip.label
 reconstruction.info <- ace(one.discrete.char, tree, type="discrete", method="ML", CI=FALSE)
 best.states <- colnames(reconstruction.info)[apply(reconstruction.info$lik.anc, 1, which.max)]
 
