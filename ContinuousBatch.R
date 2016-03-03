@@ -7,7 +7,7 @@ tree <- read.tree("Eurycea_Tree")
 discrete.data <- round(runif(length(tree$tip.label)))
 names(discrete.data)<-tree$tip.label
 
-continuous.data <- rnorm(31,mean=25,sd=8)
+continuous.data <- rnorm(nTips(tree),mean=25,sd=8)
 names(continuous.data)<-tree$tip.label
 
 cleaned.continuous <- CleanData(tree, continuous.data)
@@ -19,7 +19,7 @@ VisualizeData(cleaned.discrete)
 #First, start basic. What is the rate of evolution of your trait on the tree? 
 
 BM1 <- fitContinuous(cleaned.continuous$phy, cleaned.continuous$data, model="BM")
-print(paste("The rate of evolution is", BM1[[4]]$sigsq, "in units of", "mm per ___"))
+print(paste("The rate of evolution is", BM1[[4]]$sigsq, "in units of", "mm per x fraction of a substitution"))
 #Important: What are the rates of evolution? In what units?
 
 #ultra.tree <- chronos(cleaned.continuous$phy, lambda=0, model = "correlated")
@@ -29,14 +29,14 @@ quartz()
 par(mfcol=c(1,2))
 plot(tree, show.tip.label=FALSE)
 ou.tree <- rescale(tree, model="OU", alpha=OU1[[4]]$alpha)
-plot(ou.tree)
+plot(ou.tree, show.tip.label=FALSE)
 #How are the trees different?
 
 #Compare trees
-AIC.BM1 <- ________FIGURE_OUT_HOW_TO_DO_THIS_____
-AIC.OU1 <- ________FIGURE_OUT_HOW_TO_DO_THIS_____
-delta.AIC.BM1 <- ________FIGURE_OUT_HOW_TO_DO_THIS_____
-delta.AIC.OU1 <- ________FIGURE_OUT_HOW_TO_DO_THIS_____
+AIC.BM1 <- BM1[[4]]$aic
+AIC.OU1 <- OU1[[4]]$aic
+delta.AIC.BM1 <- AIC.BM1-min(c(AIC.BM1,AIC.OU1))
+delta.AIC.OU1 <- AIC.OU1-min(c(AIC.BM1,AIC.OU1))
 
 
 
