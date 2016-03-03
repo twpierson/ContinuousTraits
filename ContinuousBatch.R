@@ -38,8 +38,6 @@ AIC.OU1 <- OU1[[4]]$aic
 delta.AIC.BM1 <- AIC.BM1-min(c(AIC.BM1,AIC.OU1))
 delta.AIC.OU1 <- AIC.OU1-min(c(AIC.BM1,AIC.OU1))
 
-
-
 #OUwie runs:
 #This takes longer than you may be used to. 
 #We're a bit obsessive about doing multiple starts and in general
@@ -51,9 +49,13 @@ delta.AIC.OU1 <- AIC.OU1-min(c(AIC.BM1,AIC.OU1))
 #We can do this using ace() in ape, or similar functions in corHMM or diversitree. Use only one discrete char
 one.discrete.char <- discrete.data
 names(one.discrete.char)<-tree$tip.label
-reconstruction.info <- ace(one.discrete.char, tree, type="discrete", method="ML", CI=FALSE)
+reconstruction.info <- ace(one.discrete.char, tree, type="discrete", method="ML", CI=TRUE)
 best.states <- colnames(reconstruction.info)[apply(reconstruction.info$lik.anc, 1, which.max)]
 
+str(reconstruction.info)
+reconstruction.info$loglik
+
+?ace
 
 #NOW ADD THESE AS NODE LABELS TO YOUR TREE
 
