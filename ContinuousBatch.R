@@ -58,13 +58,14 @@ labeled.tree$node.label<-best.states
 tips<-rownames(cleaned.continuous$data)
 new.continuous <- data.frame(tips,cleaned.discrete$data,cleaned.continuous$data)
 colnames(new.continuous) <- c("tips","regime","data")
+new.continuous[,'regime'] <- new.continuous[,'regime']+1
 
 nodeBased.OUMV <- OUwie(labeled.tree, new.continuous,model="OUMV", simmap.tree=FALSE, diagn=FALSE)
 print(nodeBased.OUMV)
 #What do the numbers mean?
 
 #Now run all OUwie models:
-models <- c("BM1","BMS","OU1","OUMV","OUMA","OUMVA") # "OUM" doesn't work
+models <- c("BM1","BMS","OU1","OUMV","OUM","OUMA","OUMVA")
 results <- lapply(models, RunSingleOUwieModel, phy=labeled.tree, data=new.continuous)
 AICc.values<-sapply(results, "[[", "AICc")
 names(AICc.values)<-models
@@ -87,7 +88,7 @@ alpha.values<-seq(from= 1 , to= 2000 , length.out=50)
 #keep it simple (and slow) and do a for loop:
 likelihood.values <- rep(NA, length(alpha.values))
 for (iteration in sequence(length(alpha.values))) {
-	likelihood.values[iteration] <- OUwie.fixed(labeled.tree, new.continuous, model="OUMV", alpha=rep(alpha.values[iteration]), sigma.sq=best$solution[2,], theta=best$theta[,1])$loglik
+	likelihood.values[iteration] <- OUwie.fixed(labeled.tree, new.continuous, model="OUMA", alpha=rep(alpha.values[iteration],2), sigma.sq=best$solution[2,], theta=best$theta[,1])$loglik
 }
 
 plot(x= alpha.values , y= likelihood.values, xlab="Alpha Values", ylab="Log.Likelihood", type="l", bty="n")
@@ -109,7 +110,7 @@ theta2.points<-c(best$theta[2,1], rnorm(nreps-1, best$theta[2,1], 5*best$theta[2
 likelihood.values<-rep(NA,nreps)
 
 for (iteration in sequence(nreps)) {
-	likelihood.values[iteration] <- OUwie.fixed(labeled.tree, new.continuous, model="OUMV", alpha=best$solution[1,], sigma.sq=best$solution[2,], theta=c(theta1.points[iteration], theta2.points[iteration]))$loglik
+	likelihood.values[iteration] <- OUwie.fixed(labeled.tree, new.continuous, model="OUMA", alpha=best$solution[1,], sigma.sq=best$solution[2,], theta=c(theta1.points[iteration], theta2.points[iteration]))$loglik
 }
 #think of how long that took to do 400 iterations. Now remember how long the search took (longer).
 
@@ -122,8 +123,8 @@ contour(interpolated.points, xlim=range(c(theta1.points, theta2.points)),ylim=ra
 
 points(x=best$theta[1,1], y=best$theta[2,1], col="red", pch=16)
 
-points(x=trait$X[which(trait$Reg==1)],y=rep(min(c(theta1.points, theta2.points)), length(which(trait$Reg==1))), pch=18, col=rgb(0,0,0,.3)) #the tip values in regime 1, plotted along x axis
-points(y=trait$X[which(trait$Reg==2)],x=rep(min(c(theta1.points, theta2.points)), length(which(trait$Reg==2))), pch=18, col=rgb(0,0,0,.3)) #the tip values in regime 2, plotted along y axis
+points(x=new.continuous$X[which(new.continuous$Reg==1)],y=rep(min(c(theta1.points, theta2.points)), length(which(new.continuous$Reg==1))), pch=18, col=rgb(0,0,0,.3)) #the tip values in regime 1, plotted along x axis
+points(y=new.continuous$X[which(new.continuous$Reg==2)],x=rep(min(c(theta1.points, theta2.points)), length(which(new.continuous$Reg==2))), pch=18, col=rgb(0,0,0,.3)) #the tip values in regime 2, plotted along y axis
 
 
 #The below only works if the discrete trait rate is low, so you have a good chance of estimating where the state is.
