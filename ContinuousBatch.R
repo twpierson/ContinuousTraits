@@ -64,13 +64,11 @@ print(nodeBased.OUMV)
 #What do the numbers mean?
 
 #Now run all OUwie models:
-models <- c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
-results <- lapply(models, RunSingleOUwieModel, phy=tree, data=trait)
-
+models <- c("BM1","BMS","OU1","OUMV","OUMA","OUMVA") # "OUM" doesn't work
+results <- lapply(models, RunSingleOUwieModel, phy=labeled.tree, data=new.continuous)
 AICc.values<-sapply(results, "[[", "AICc")
 names(AICc.values)<-models
 AICc.values<-AICc.values-min(AICc.values)
-
 
 print(AICc.values) #The best model is the one with smallest AICc score
 
@@ -84,12 +82,12 @@ print(best) #prints info on best model
 ?OUwie.fixed
 
 #Next, keep all parameters but alpha at their maximum likelihood estimates (better would be to fix just alpha and let the others optimize given this constraint, but this is harder to program for this class). Try a range of alpha values and plot the likelihood against this.
-alpha.values<-seq(from= 0.1 , to= 1 , length.out=50)
+alpha.values<-seq(from= 1 , to= 2000 , length.out=50)
 
 #keep it simple (and slow) and do a for loop:
 likelihood.values <- rep(NA, length(alpha.values))
 for (iteration in sequence(length(alpha.values))) {
-	likelihood.values[iteration] <- OUwie.fixed(tree, trait, model="OUMV", alpha=rep(alpha.values[iteration],2), sigma.sq=best$solution[2,], theta=best$theta[,1])$loglik
+	likelihood.values[iteration] <- OUwie.fixed(labeled.tree, new.continuous, model="OUMV", alpha=rep(alpha.values[iteration]), sigma.sq=best$solution[2,], theta=best$theta[,1])$loglik
 }
 
 plot(x= alpha.values , y= likelihood.values, xlab="Alpha Values", ylab="Log.Likelihood", type="l", bty="n")
@@ -111,7 +109,7 @@ theta2.points<-c(best$theta[2,1], rnorm(nreps-1, best$theta[2,1], 5*best$theta[2
 likelihood.values<-rep(NA,nreps)
 
 for (iteration in sequence(nreps)) {
-	likelihood.values[iteration] <- OUwie.fixed(tree, trait, model="OUMV", alpha=best$solution[1,], sigma.sq=best$solution[2,], theta=c(theta1.points[iteration], theta2.points[iteration]))$loglik
+	likelihood.values[iteration] <- OUwie.fixed(labeled.tree, new.continuous, model="OUMV", alpha=best$solution[1,], sigma.sq=best$solution[2,], theta=c(theta1.points[iteration], theta2.points[iteration]))$loglik
 }
 #think of how long that took to do 400 iterations. Now remember how long the search took (longer).
 
