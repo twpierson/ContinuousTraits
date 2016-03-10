@@ -19,13 +19,11 @@ VisualizeData(cleaned.discrete)
 #First, start basic. What is the rate of evolution of your trait on the tree? 
 
 BM1 <- fitContinuous(cleaned.continuous$phy, cleaned.continuous$data, model="BM")
-print(paste("The rate of evolution is", BM1[[4]]$sigsq, "in units of", "mm per x fraction of a substitution"))
+print(paste("The rate of evolution is", BM1[[4]]$sigsq, "in units of", "mm per x fraction of a nucleotide substitution"))
 #Important: What are the rates of evolution? In what units?
 
-#ultra.tree <- chronos(cleaned.continuous$phy, lambda=0, model = "correlated")
 OU1 <- fitContinuous(tree, cleaned.continuous$data, model="OU")
 
-quartz()
 par(mfcol=c(1,2))
 plot(tree, show.tip.label=FALSE)
 ou.tree <- rescale(tree, model="OU", alpha=OU1[[4]]$alpha)
@@ -50,19 +48,18 @@ delta.AIC.OU1 <- AIC.OU1-min(c(AIC.BM1,AIC.OU1))
 one.discrete.char <- discrete.data
 names(one.discrete.char)<-tree$tip.label
 reconstruction.info <- ace(one.discrete.char, tree, type="discrete", method="ML", CI=TRUE)
-best.states <- colnames(reconstruction.info)[apply(reconstruction.info$lik.anc, 1, which.max)]
-
-str(reconstruction.info)
-reconstruction.info$loglik
-
-?ace
+best.states <- apply(reconstruction.info$lik.anc, 1, which.max)
 
 #NOW ADD THESE AS NODE LABELS TO YOUR TREE
 
-labeled.tree <- ________________
+labeled.tree <- tree
+labeled.tree$node.label<-best.states
 
+tips<-rownames(cleaned.continuous$data)
+new.continuous <- data.frame(tips,cleaned.discrete$data,cleaned.continuous$data)
+colnames(new.continuous) <- c("tips","regime","data")
 
-nodeBased.OUMV <- OUwie(tree, cleaned.continuous,model="OUMV", simmap.tree=FALSE, diagn=FALSE)
+nodeBased.OUMV <- OUwie(labeled.tree, new.continuous,model="OUMV", simmap.tree=FALSE, diagn=FALSE)
 print(nodeBased.OUMV)
 #What do the numbers mean?
 
@@ -87,8 +84,7 @@ print(best) #prints info on best model
 ?OUwie.fixed
 
 #Next, keep all parameters but alpha at their maximum likelihood estimates (better would be to fix just alpha and let the others optimize given this constraint, but this is harder to program for this class). Try a range of alpha values and plot the likelihood against this.
-alpha.values<-seq(from= _______________ , to= _______________ , length.out=50)
-stop("replace the _______________ and delete this stop")
+alpha.values<-seq(from= 0.1 , to= 1 , length.out=50)
 
 #keep it simple (and slow) and do a for loop:
 likelihood.values <- rep(NA, length(alpha.values))
@@ -96,16 +92,14 @@ for (iteration in sequence(length(alpha.values))) {
 	likelihood.values[iteration] <- OUwie.fixed(tree, trait, model="OUMV", alpha=rep(alpha.values[iteration],2), sigma.sq=best$solution[2,], theta=best$theta[,1])$loglik
 }
 
-plot(x= _______________ , y= _______________, xlab="_______________", ylab="_______________", type="l", bty="n")
-stop("replace the _______________ and delete this stop")
+plot(x= alpha.values , y= likelihood.values, xlab="Alpha Values", ylab="Log.Likelihood", type="l", bty="n")
 
 
 points(x=best$solution[1,1], y=best$loglik, pch=16, col="red")
 text(x=best$solution[1,1], y=best$loglik, "unconstrained best", pos=4, col="red")
 
 #a rule of thumb for confidence for likelihood is all points two log likelihood units worse than the best value. Draw a dotted line on the plot to show this
-abline(h=_______________, lty="dotted") #Two log-likelihood 
-stop("replace the _______________ and delete this stop")
+abline(h=best$loglik-2, lty="dotted") #Two log-likelihood 
 
 
 #Now, let's try looking at both theta parameters at once, keeping the other parameters at their MLEs
