@@ -4,31 +4,56 @@ setwd("~/Desktop/UTK/Spring_2016/PhyloMeth/ContinuousTraits")
 
 tree <- read.tree("Eurycea_Tree")
 
-discrete.data <- round(runif(length(tree$tip.label)))
-names(discrete.data)<-tree$tip.label
+# Here's the old, bad data. 
+#discrete.data <- round(runif(length(tree$tip.label)))
+#names(discrete.data)<-tree$tip.label
 
-continuous.data <- rnorm(nTips(tree),mean=25,sd=8)
-names(continuous.data)<-tree$tip.label
+#continuous.data <- rnorm(nTips(tree),mean=25,sd=8)
+#names(continuous.data)<-tree$tip.label
 
-cleaned.continuous <- CleanData(tree, continuous.data)
-cleaned.discrete <- CleanData(tree, discrete.data)
+# Here I'm simulating a discrete trait.
+q <- list(rbind(c(-12,12), c(12,-12)))
+sim.discrete.1 <- sim.char(tree, q, model='discrete', n=1)
+sim.discrete.2 <- sim.char(tree, q, model='discrete', n=1)
+# Here I'm reformatting those trait data so that they work in downstream analyses. The format they were in had a weird string of text at the top that was causing problems.
+new.discrete.1 <- as.vector(sim.discrete.1)
+new.discrete.2 <- as.vector(sim.discrete.2)
+names(new.discrete.1) <- row.names(sim.discrete.1)
+names(new.discrete.2) <- row.names(sim.discrete.2)
+
+full.discrete <- data.frame(new.discrete.1,new.discrete.2)
+
+# Here I'm simulating a continuous trait.
+sim.continuous.1 <- sim.char(tree, 1, n=1)
+sim.continuous.2 <- sim.char(tree, 2, n=1)
+# Here I'm reformatting those trait data so that they work in downstream analyses. The format they were in had a weird string of text at the top that was causing problems.
+new.continuous.1 <- as.vector(sim.continuous.1)
+new.continuous.2 <- as.vector(sim.continuous.2)
+names(new.continuous.1) <- row.names(sim.continuous.1)
+names(new.continuous.2) <- row.names(sim.continuous.2)
+
+full.continuous <- data.frame(new.continuous.1,new.continuous.2)
+
+cleaned.discrete <- CleanData(tree, full.discrete)
+cleaned.continuous <- CleanData(tree, full.continuous)
 
 VisualizeData(cleaned.continuous)
 VisualizeData(cleaned.discrete)
 
 #First, start basic. What is the rate of evolution of your trait on the tree? 
 
-BM1 <- fitContinuous(cleaned.continuous$phy, cleaned.continuous$data, model="BM")
+BM1 <- fitContinuous(cleaned.continuous$phy, cleaned.continuous$data[,2], model="BM")
 print(paste("The rate of evolution is", BM1[[4]]$sigsq, "in units of", "mm per x fraction of a nucleotide substitution"))
 #Important: What are the rates of evolution? In what units?
 
-OU1 <- fitContinuous(tree, cleaned.continuous$data, model="OU")
+OU1 <- fitContinuous(tree, cleaned.continuous$data[,2], model="OU")
 
 par(mfcol=c(1,2))
 plot(tree, show.tip.label=FALSE)
 ou.tree <- rescale(tree, model="OU", alpha=OU1[[4]]$alpha)
 plot(ou.tree, show.tip.label=FALSE)
 #How are the trees different?
+# They're very similar, but some branch lengths differ slightly.
 
 #Compare trees
 AIC.BM1 <- BM1[[4]]$aic
@@ -41,12 +66,11 @@ delta.AIC.OU1 <- AIC.OU1-min(c(AIC.BM1,AIC.OU1))
 #We're a bit obsessive about doing multiple starts and in general
 #performing a thorough numerical search. It took you 3+ years
 #to get the data, may as well take an extra five minutes to 
-#get an accurate answer
+#get an accurate answer.
 
 #First, we need to assign regimes. The way we do this is with ancestral state estimation of a discrete trait.
 #We can do this using ace() in ape, or similar functions in corHMM or diversitree. Use only one discrete char
-one.discrete.char <- discrete.data
-names(one.discrete.char)<-tree$tip.label
+one.discrete.char <- new.discrete.1
 reconstruction.info <- ace(one.discrete.char, tree, type="discrete", method="ML", CI=TRUE)
 best.states <- apply(reconstruction.info$lik.anc, 1, which.max)
 
@@ -56,17 +80,16 @@ labeled.tree <- tree
 labeled.tree$node.label<-best.states
 
 tips<-rownames(cleaned.continuous$data)
-new.continuous <- data.frame(tips,cleaned.discrete$data,cleaned.continuous$data)
-colnames(new.continuous) <- c("tips","regime","data")
-new.continuous[,'regime'] <- new.continuous[,'regime']+1
+newer.continuous <- data.frame(tips,cleaned.discrete$data[,1],cleaned.continuous$data[,1])
+colnames(newer.continuous) <- c("tips","regime","data")
 
-nodeBased.OUMV <- OUwie(labeled.tree, new.continuous,model="OUMV", simmap.tree=FALSE, diagn=FALSE)
+nodeBased.OUMV <- OUwie(labeled.tree, newer.continuous,model="OUMV", simmap.tree=FALSE, diagn=FALSE)
 print(nodeBased.OUMV)
 #What do the numbers mean?
 
 #Now run all OUwie models:
 models <- c("BM1","BMS","OU1","OUMV","OUM","OUMA","OUMVA")
-results <- lapply(models, RunSingleOUwieModel, phy=labeled.tree, data=new.continuous)
+results <- lapply(models, RunSingleOUwieModel, phy=labeled.tree, data=newer.continuous)
 AICc.values<-sapply(results, "[[", "AICc")
 names(AICc.values)<-models
 AICc.values<-AICc.values-min(AICc.values)
@@ -117,9 +140,9 @@ for (iteration in sequence(nreps)) {
 likelihood.differences<-(-(likelihood.values-max(likelihood.values)))
 
 #We are interpolating here: contour wants a nice grid. But by centering our simulations on the MLE values, we made sure to sample most thoroughly there
-interpolated.points<-interp(x=theta1.points, y=theta2.points, z= likelihood.differences, linear=FALSE, extrap=TRUE, xo=seq(min(theta1.points), max(theta1.points), length = 400), yo=seq(min(theta2.points), max(theta2.points), length = 400))
+interpolated.points<-interp(x=theta1.points, y=1000000000000000*theta2.points, z= likelihood.differences, linear=FALSE, extrap=TRUE, xo=seq(min(theta1.points), max(theta1.points), length = 400), yo=seq(min(1000000000000000*theta2.points), max(1000000000000000*theta2.points), length = 400))
 	
-contour(interpolated.points, xlim=range(c(theta1.points, theta2.points)),ylim=range(c(theta1.points, theta2.points)), xlab="Theta 1", ylab="Theta 2", levels=c(2,5,10),add=FALSE,lwd=1, bty="n", asp=1)
+contour(interpolated.points, xlim=range(c(theta1.points, 100000000000000*theta2.points)),ylim=range(c(theta1.points, 100000000000000*theta2.points)), xlab="Theta 1", ylab="Theta 2", levels=c(2,5,10),add=FALSE,lwd=1, bty="n", asp=1)
 
 points(x=best$theta[1,1], y=best$theta[2,1], col="red", pch=16)
 
