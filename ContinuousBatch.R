@@ -25,7 +25,7 @@ full.discrete <- data.frame(new.discrete.1,new.discrete.2)
 
 # Here I'm simulating a continuous trait.
 sim.continuous.1 <- sim.char(tree, 1, n=1)
-sim.continuous.2 <- sim.char(tree, 2, n=1)
+sim.continuous.2 <- sim.char(tree, 10000, root=50, n=1)
 # Here I'm reformatting those trait data so that they work in downstream analyses. The format they were in had a weird string of text at the top that was causing problems.
 new.continuous.1 <- as.vector(sim.continuous.1)
 new.continuous.2 <- as.vector(sim.continuous.2)
@@ -106,16 +106,15 @@ print(best) #prints info on best model
 ?OUwie.fixed
 
 #Next, keep all parameters but alpha at their maximum likelihood estimates (better would be to fix just alpha and let the others optimize given this constraint, but this is harder to program for this class). Try a range of alpha values and plot the likelihood against this.
-alpha.values<-seq(from= 1 , to= 2000 , length.out=50)
+alpha.values<-seq(from= 1 , to= 10 , length.out=50)
 
 #keep it simple (and slow) and do a for loop:
 likelihood.values <- rep(NA, length(alpha.values))
 for (iteration in sequence(length(alpha.values))) {
-	likelihood.values[iteration] <- OUwie.fixed(labeled.tree, new.continuous, model="OUMA", alpha=rep(alpha.values[iteration],2), sigma.sq=best$solution[2,], theta=best$theta[,1])$loglik
+	likelihood.values[iteration] <- OUwie.fixed(labeled.tree, newer.continuous, model="OUMA", alpha=rep(alpha.values[iteration],2), sigma.sq=best$solution[2,], theta=best$theta[,1])$loglik
 }
 
 plot(x= alpha.values , y= likelihood.values, xlab="Alpha Values", ylab="Log.Likelihood", type="l", bty="n")
-
 
 points(x=best$solution[1,1], y=best$loglik, pch=16, col="red")
 text(x=best$solution[1,1], y=best$loglik, "unconstrained best", pos=4, col="red")
@@ -133,7 +132,7 @@ theta2.points<-c(best$theta[2,1], rnorm(nreps-1, best$theta[2,1], 5*best$theta[2
 likelihood.values<-rep(NA,nreps)
 
 for (iteration in sequence(nreps)) {
-	likelihood.values[iteration] <- OUwie.fixed(labeled.tree, new.continuous, model="OUMA", alpha=best$solution[1,], sigma.sq=best$solution[2,], theta=c(theta1.points[iteration], theta2.points[iteration]))$loglik
+	likelihood.values[iteration] <- OUwie.fixed(labeled.tree, newer.continuous, model="OUMA", alpha=best$solution[1,], sigma.sq=best$solution[2,], theta=c(theta1.points[iteration], theta2.points[iteration]))$loglik
 }
 #think of how long that took to do 400 iterations. Now remember how long the search took (longer).
 
@@ -146,8 +145,8 @@ contour(interpolated.points, xlim=range(c(theta1.points, 100000000000000*theta2.
 
 points(x=best$theta[1,1], y=best$theta[2,1], col="red", pch=16)
 
-points(x=new.continuous$X[which(new.continuous$Reg==1)],y=rep(min(c(theta1.points, theta2.points)), length(which(new.continuous$Reg==1))), pch=18, col=rgb(0,0,0,.3)) #the tip values in regime 1, plotted along x axis
-points(y=new.continuous$X[which(new.continuous$Reg==2)],x=rep(min(c(theta1.points, theta2.points)), length(which(new.continuous$Reg==2))), pch=18, col=rgb(0,0,0,.3)) #the tip values in regime 2, plotted along y axis
+points(x=newer.continuous$X[which(new.continuous$Reg==1)],y=rep(min(c(theta1.points, theta2.points)), length(which(new.continuous$Reg==1))), pch=18, col=rgb(0,0,0,.3)) #the tip values in regime 1, plotted along x axis
+points(y=newer.continuous$X[which(new.continuous$Reg==2)],x=rep(min(c(theta1.points, theta2.points)), length(which(new.continuous$Reg==2))), pch=18, col=rgb(0,0,0,.3)) #the tip values in regime 2, plotted along y axis
 
 
 #The below only works if the discrete trait rate is low, so you have a good chance of estimating where the state is.
