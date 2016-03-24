@@ -106,7 +106,7 @@ print(best) #prints info on best model
 ?OUwie.fixed
 
 #Next, keep all parameters but alpha at their maximum likelihood estimates (better would be to fix just alpha and let the others optimize given this constraint, but this is harder to program for this class). Try a range of alpha values and plot the likelihood against this.
-alpha.values<-seq(from= 1 , to= 10 , length.out=50)
+alpha.values<-seq(from= 1 , to= 100 , length.out=50)
 
 #keep it simple (and slow) and do a for loop:
 likelihood.values <- rep(NA, length(alpha.values))
